@@ -20,11 +20,14 @@ isnets = {}
 gpu = model_management.get_torch_device()
 cpu = torch.device("cpu")
 model_dir = os.path.join(folder_paths.models_dir, "isnet")
+model_dirs = [model_dir]
+if os.path.exists("/stable-diffusion-cache/models/isnet"):
+    model_dirs.append("/stable-diffusion-cache/models/isnet")
 model_url = "https://huggingface.co/NimaBoscarino/IS-Net_DIS-general-use/resolve/main/isnet-general-use.pth"
 cache_size = [1024, 1024]
 
 folder_paths.folder_names_and_paths["isnet"] = (
-    [model_dir],
+    model_dirs,
     folder_paths.supported_pt_extensions,
 )
 

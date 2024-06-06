@@ -9,12 +9,15 @@ import comfy.utils
 
 from ...utils import ensure_package, tensor2pil, pil2tensor
 
-folder_paths.folder_names_and_paths["sams"] = (
-    [
-        os.path.join(folder_paths.models_dir, "sams"),
-    ],
-    folder_paths.supported_pt_extensions,
-)
+if "sams" not in folder_paths.folder_names_and_paths:
+    folder_paths.folder_names_and_paths["sams"] = (
+        [
+            os.path.join(folder_paths.models_dir, "sams"),
+        ],
+        folder_paths.supported_pt_extensions,
+    )
+    if os.path.exists('/stable-diffusion-cache/models/sams'):
+        folder_paths.add_model_folder_path("sams", "/stable-diffusion-cache/models/sams")
 
 gpu = model_management.get_torch_device()
 cpu = torch.device("cpu")

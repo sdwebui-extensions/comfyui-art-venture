@@ -15,6 +15,8 @@ lama = None
 gpu = model_management.get_torch_device()
 cpu = torch.device("cpu")
 model_dir = os.path.join(folder_paths.models_dir, "lama")
+if os.path.exists("/stable-diffusion-cache/models/lama"):
+    model_dir = "/stable-diffusion-cache/models/lama"
 model_url = "https://d111kwgh87c0gj.cloudfront.net/stable-diffusion/lama/big-lama.pt"
 config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.yaml")
 

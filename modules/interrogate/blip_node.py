@@ -18,9 +18,12 @@ model_url = (
     "https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_caption_capfilt_large.pth"
 )
 model_dir = os.path.join(folder_paths.models_dir, "blip")
+model_dirs = [model_dir]
+if os.path.exists('/stable-diffusion-cache/models/blip'):
+    model_dirs.append("/stable-diffusion-cache/models/blip")
 
 folder_paths.folder_names_and_paths["blip"] = (
-    [model_dir],
+    model_dirs,
     folder_paths.supported_pt_extensions,
 )
 
