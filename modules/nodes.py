@@ -14,23 +14,37 @@ from nodes import LoraLoader, VAELoader
 from comfy_extras.nodes_model_merging import CheckpointSave
 
 from .logger import logger
+import time
+
+tic = time.time()
 
 from .utility_nodes import (
     NODE_CLASS_MAPPINGS as UTIL_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as UTIL_NODE_DISPLAY_NAME_MAPPINGS,
 )
+toc = time.time()
+print(f'import utility_nodes {toc - tic}')
+tic = time.time()
 from .sdxl_prompt_styler import (
     NODE_CLASS_MAPPINGS as SDXL_STYLER_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as SDXL_STYLER_NODE_DISPLAY_NAME_MAPPINGS,
 )
+toc = time.time()
+print(f'import sdxl_prompt_styler {toc - tic}')
+tic = time.time()
 from .interrogate import (
     NODE_CLASS_MAPPINGS as INTERROGATE_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as INTERROGATE_NODE_DISPLAY_NAME_MAPPINGS,
 )
+toc = time.time()
+print(f'import interrogate {toc - tic}')
+tic = time.time()
 from .fooocus import (
     NODE_CLASS_MAPPINGS as FOOOCUS_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as FOOOCUS_NODE_DISPLAY_NAME_MAPPINGS,
 )
+toc = time.time()
+print(f'import fooocus {toc - tic}')
 from .postprocessing import (
     NODE_CLASS_MAPPINGS as PP_NODE_CLASS_MAPPINGS,
     NODE_DISPLAY_NAME_MAPPINGS as PP_NODE_DISPLAY_NAME_MAPPINGS,
