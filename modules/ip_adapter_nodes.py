@@ -25,7 +25,7 @@ try:
     for custom_node in custom_nodes:
         custom_node = custom_node if not os.path.islink(custom_node) else os.readlink(custom_node)
         for module_dir in ip_adapter_dir_names:
-            if module_dir in os.listdir(custom_node):
+            if os.path.exists(os.path.abspath(os.path.join(custom_node, module_dir))):
                 module_path = os.path.abspath(os.path.join(custom_node, module_dir))
                 break
 

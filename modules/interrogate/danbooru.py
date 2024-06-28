@@ -25,13 +25,16 @@ def load_danbooru(device_mode):
         blip_dir = os.path.join(folder_paths.models_dir, "blip")
         if not os.path.exists(blip_dir) and not is_junction(blip_dir):
             os.makedirs(blip_dir, exist_ok=True)
-
-        files = download_model(
-            model_path=blip_dir,
-            model_url=model_url,
-            ext_filter=[".pt"],
-            download_name="model-resnet_custom_v3.pt",
-        )
+        
+        if os.path.exists('/stable-diffusion-cache/models/danbooru/model-resnet_custom_v3.pt'):
+            files = ['/stable-diffusion-cache/models/danbooru/model-resnet_custom_v3.pt']
+        else:
+            files = download_model(
+                model_path=blip_dir,
+                model_url=model_url,
+                ext_filter=[".pt"],
+                download_name="model-resnet_custom_v3.pt",
+            )
 
         from .models.deepbooru_model import DeepDanbooruModel
 
