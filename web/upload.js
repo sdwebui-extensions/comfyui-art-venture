@@ -1,7 +1,9 @@
-import { app, ComfyApp, ANIM_PREVIEW_WIDGET } from '../../../scripts/app.js';
+import { app, ANIM_PREVIEW_WIDGET } from '../../../scripts/app.js';
 import { api } from '../../../scripts/api.js';
 import { $el } from '../../../scripts/ui.js';
 import { createImageHost } from '../../../scripts/ui/imagePreview.js';
+
+import { chainCallback, addKVState } from './utils.js';
 
 const style = `
 .comfy-img-preview video {
@@ -11,27 +13,9 @@ const style = `
 }
 `;
 
-const URL_REGEX = /^((blob:)?https?:\/\/|\/view\?|data:image\/)/;
+const URL_REGEX = /^((blob:)?https?:\/\/|\/view\?|\/api\/view\?|data:image\/)/
 
 const supportedNodes = ['LoadImageFromUrl', 'LoadImageAsMaskFromUrl', 'LoadVideoFromUrl'];
-
-function chainCallback(object, property, callback) {
-  if (object == undefined) {
-    //This should not happen.
-    console.error('Tried to add callback to non-existant object');
-    return;
-  }
-  if (property in object) {
-    const callback_orig = object[property];
-    object[property] = function () {
-      const r = callback_orig.apply(this, arguments);
-      callback.apply(this, arguments);
-      return r;
-    };
-  } else {
-    object[property] = callback;
-  }
-}
 
 function injectHidden(widget) {
   widget.computeSize = (target_width) => {
@@ -54,106 +38,47 @@ function injectHidden(widget) {
   });
 }
 
-function addKVState(nodeType) {
+function migrateWidget(nodeType, oldWidgetName, newWidgetName) {
   chainCallback(nodeType.prototype, 'onNodeCreated', function () {
+    if (!this.widgets) return;
+
+    const oldIndex = this.widgets.findIndex((w) => w.name === oldWidgetName);
+    if (oldIndex > -1) {
+      this.widgets.splice(oldIndex, 1);
+    }
+
     chainCallback(this, 'onConfigure', function (info) {
-      if (!this.widgets) {
-        //Node has no widgets, there is nothing to restore
-        return;
-      }
-      if (typeof info.widgets_values != 'object') {
-        //widgets_values is in some unknown inactionable format
-        return;
-      }
-      let widgetDict = info.widgets_values;
-      if (widgetDict.length == undefined) {
-        for (let w of this.widgets) {
-          if (w.name in widgetDict) {
-            w.value = widgetDict[w.name];
-          } else {
-            //attempt to restore default value
-            let inputs = LiteGraph.getNodeType(this.type).nodeData.input;
-            let initialValue = null;
-            if (inputs?.required?.hasOwnProperty(w.name)) {
-              if (inputs.required[w.name][1]?.hasOwnProperty('default')) {
-                initialValue = inputs.required[w.name][1].default;
-              } else if (inputs.required[w.name][0].length) {
-                initialValue = inputs.required[w.name][0][0];
-              }
-            } else if (inputs?.optional?.hasOwnProperty(w.name)) {
-              if (inputs.optional[w.name][1]?.hasOwnProperty('default')) {
-                initialValue = inputs.optional[w.name][1].default;
-              } else if (inputs.optional[w.name][0].length) {
-                initialValue = inputs.optional[w.name][0][0];
-              }
-            }
-            if (initialValue) {
-              w.value = initialValue;
-            }
-          }
-        }
-      } else {
-        //Saved data was not a map made by this method
-        //and a conversion dict for it does not exist
-        //It's likely an array and that has been blindly applied
-        if (info?.widgets_values?.length != this.widgets.length) {
-          //Widget could not have restored properly
-          //Note if multiple node loads fail, only the latest error dialog displays
-          app.ui.dialog.show(
-            'Failed to restore node: ' + this.title + '\nPlease remove and re-add it.',
-          );
-          this.bgcolor = '#C00';
-        }
-      }
-    });
-    chainCallback(this, 'onSerialize', function (info) {
-      info.widgets_values = {};
-      if (!this.widgets) {
-        //object has no widgets, there is nothing to store
-        return;
-      }
-      for (let w of this.widgets) {
-        info.widgets_values[w.name] = w.value;
+      if (typeof info.widgets_values != 'object') return;
+
+      const newWidget = this.widgets.find((w) => w.name === newWidgetName);
+      if (newWidget && info.widgets_values[oldWidgetName]) {
+        newWidget.value = info.widgets_values[oldWidgetName];
       }
     });
   });
 }
 
-function migrateWidget(nodeType, oldWidgetName, newWidgetName) {
-  chainCallback(nodeType.prototype, 'onNodeCreated', function () {
-    if (!this.widgets) return
-
-    const oldIndex = this.widgets.findIndex(w => w.name === oldWidgetName)
-    if (oldIndex > -1) {
-      this.widgets.splice(oldIndex, 1)
-    }
-
-    chainCallback(this, 'onConfigure', function (info) {
-      if (typeof info.widgets_values != 'object') return
-
-      const newWidget = this.widgets.find(w => w.name === newWidgetName)
-      if (newWidget && info.widgets_values[oldWidgetName]) {
-        newWidget.value = info.widgets_values[oldWidgetName]
-      }
-    })
-  })
-}
-
 function formatImageUrl(params) {
-  if (typeof params === 'string') {
+  if (typeof params === "string") {
     if (URL_REGEX.test(params)) return params;
 
-    const folder_separator = params.lastIndexOf('/');
-    let subfolder = '';
+    const folder_separator = params.lastIndexOf("/");
+    let subfolder = "";
     if (folder_separator > -1) {
       subfolder = params.substring(0, folder_separator);
       params = params.substring(folder_separator + 1);
     }
-    return api.apiURL(
-      `/view?filename=${encodeURIComponent(
-        params,
-      )}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}`,
-    );
+    let type = "input";
+    if (params.indexOf(" [") > -1) {
+      type = params.split(" [")[1].split("]")[0];
+      params = params.split(" [")[0];
+    }
+
+    params = {
+      filename: params,
+      type: type,
+      subfolder: subfolder,
+    };
   }
 
   if (params.url) {
@@ -167,7 +92,7 @@ function formatImageUrl(params) {
     delete params.name;
   }
 
-  return api.apiURL('/view?' + new URLSearchParams(params));
+  return api.apiURL("/view?" + new URLSearchParams(params).toString() + app.getPreviewFormatParam());
 }
 
 async function uploadFile(file) {
@@ -267,7 +192,10 @@ function addVideoCustomSize(nodeType, nodeData, widgetName) {
 
 function addUploadWidget(nodeType, widgetName, type) {
   chainCallback(nodeType.prototype, 'onNodeCreated', function () {
+    this.images = [];
     const pathWidget = this.widgets.find((w) => w.name === widgetName);
+    const supportMultiple = pathWidget.type === 'customtext';
+
     if (pathWidget.element) {
       pathWidget.options.getMinHeight = () => 50;
       pathWidget.options.getMaxHeight = () => 150;
@@ -283,7 +211,7 @@ function addUploadWidget(nodeType, widgetName, type) {
         type: 'file',
         accept: 'image/png,image/jpeg,image/webp',
         style: 'display: none',
-        multiple: true,
+        multiple: supportMultiple,
         onchange: async () => {
           if (!fileInput.files.length) {
             return;
@@ -307,7 +235,7 @@ function addUploadWidget(nodeType, widgetName, type) {
             }
           }
 
-          pathWidget.value = successes.map(formatImageUrl).join("\n")
+          pathWidget.value = successes.map(formatImageUrl).join('\n');
           fileInput.value = '';
         },
       });
@@ -316,7 +244,7 @@ function addUploadWidget(nodeType, widgetName, type) {
         type: 'file',
         accept: 'video/webm,video/mp4,video/mkv,image/gif,image/webp',
         style: 'display: none',
-        multiple: true,
+        multiple: supportMultiple,
         onchange: async () => {
           if (!fileInput.files.length) {
             return;
@@ -340,7 +268,7 @@ function addUploadWidget(nodeType, widgetName, type) {
             }
           }
 
-          pathWidget.callback(successes.map(formatImageUrl).join('\n'));
+          pathWidget.value = successes.map(formatImageUrl).join('\n');
           fileInput.value = '';
         },
       });
@@ -354,43 +282,88 @@ function addUploadWidget(nodeType, widgetName, type) {
       app.canvas.node_widget = null;
       fileInput.click();
     });
-    uploadWidget.options.serialize = false;
+    uploadWidget.serialize = false;
+
+    // Add handler to check if an image is being dragged over our node
+    this.onDragOver = function (e) {
+      if (e.dataTransfer && e.dataTransfer.items) {
+        const image = [...e.dataTransfer.items].find((f) => f.kind === 'file');
+        return !!image;
+      }
+
+      return false;
+    };
+
+    // On drop upload files
+    this.onDragDrop = async function (e) {
+      let successes = [];
+      const files = e.dataTransfer.files
+        .filter((file) => file.type.startsWith('image/'))
+        .slice(0, supportMultiple ? undefined : 1);
+
+      for (const file of files) {
+        const params = await uploadFile(file);
+        if (!!params) {
+          successes.push(params);
+        }
+        pathWidget.value = (supportMultiple ? this.images : [])
+          .concat(...successes.map(formatImageUrl))
+          .join('\n');
+      }
+
+      return successes.length > 0;
+    };
+
+    this.pasteFile = function (file) {
+      if (file.type.startsWith('image/')) {
+        uploadFile(file).then((res) => {
+          pathWidget.value = (supportMultiple ? this.images : [])
+            .concat(formatImageUrl(res))
+            .join('\n');
+        });
+        return true;
+      }
+      return false;
+    };
   });
 }
 
 function patchValueSetter(nodeType, widgetName) {
   chainCallback(nodeType.prototype, 'onNodeCreated', function () {
-    const pathWidget = this.widgets.find(w => w.name === widgetName)
-    pathWidget._value = pathWidget.value
-    let editing = false
+    const pathWidget = this.widgets.find((w) => w.name === widgetName);
+    pathWidget._value = pathWidget.value;
+    let editing = false;
 
-    const setter = value => {
-      pathWidget._value = value
-      this.images = (value ?? "").split("\n")
-      if (pathWidget.type === "customtext" && !editing) {
-        pathWidget.inputEl.value = value
+    const setter = (value) => {
+      if (typeof value !== 'string') value = formatImageUrl(value);
+
+      pathWidget._value = value;
+      this.images = (value ?? '').split('\n').filter(Boolean);
+      if (pathWidget.type === 'customtext' && !editing) {
+        pathWidget.inputEl.value = value;
       }
-    }
+      delete app.nodeOutputs[this.id]
+    };
 
-    Object.defineProperty(pathWidget, "value", {
+    Object.defineProperty(pathWidget, 'value', {
       set: setter,
       get: () => pathWidget._value,
-    })
+    });
 
-    if (pathWidget.type === "customtext") {
-      pathWidget.inputEl.addEventListener("focus", (e) => {
-        editing = true
-      })
-      pathWidget.inputEl.addEventListener("blur", (e) => {
-        editing = false
-      })
-      pathWidget.inputEl.addEventListener("keyup", (e) => {
-        setter(e.target.value)
-      })
+    if (pathWidget.type === 'customtext') {
+      pathWidget.inputEl.addEventListener('focus', (e) => {
+        editing = true;
+      });
+      pathWidget.inputEl.addEventListener('blur', (e) => {
+        editing = false;
+      });
+      pathWidget.inputEl.addEventListener('keyup', (e) => {
+        setter(e.target.value);
+      });
     }
 
-    pathWidget.callback = setter
-    pathWidget.value = pathWidget._value
+    pathWidget.callback = setter;
+    pathWidget.value = pathWidget._value;
   });
 }
 
@@ -453,14 +426,24 @@ function addVideoPreview(nodeType, widgetName) {
     }
 
     const promises = imageURLs.map((url) => {
-      if (url.startsWith('/view')) {
+      if (/^(\/api)?\/view/.test(url)) {
         url = window.location.origin + url;
       }
 
-      const u = new URL(url);
-      const filename =
-        u.searchParams.get('filename') || u.searchParams.get('name') || u.pathname.split('/').pop();
-      const ext = filename.split('.').pop();
+      let ext = '';
+      if (url.startsWith('data:')) {
+        const blob = dataUriToBlob(url);
+        ext = blob.type.split('/').pop();
+        url = URL.createObjectURL(blob);
+      } else {
+        const u = new URL(url);
+        const filename =
+          u.searchParams.get('filename') ||
+          u.searchParams.get('name') ||
+          u.pathname.split('/').pop();
+        ext = filename.split('.').pop();
+      }
+
       const format = ['gif', 'webp', 'avif'].includes(ext) ? 'image' : 'video';
       if (format === 'video') {
         return createVideoNode(url);
@@ -511,7 +494,7 @@ function addVideoPreview(nodeType, widgetName) {
       });
   };
 
-  patchValueSetter(nodeType, widgetName)
+  patchValueSetter(nodeType, widgetName);
 
   chainCallback(nodeType.prototype, 'onExecuted', function (message) {
     if (message?.videos) {
@@ -558,7 +541,7 @@ function addImagePreview(nodeType, widgetName) {
     onDrawBackground?.call(this, ctx);
   };
 
-  patchValueSetter(nodeType, widgetName)
+  patchValueSetter(nodeType, widgetName);
 }
 
 app.registerExtension({
@@ -575,10 +558,10 @@ app.registerExtension({
       return;
     }
 
-    addKVState(nodeType)
+    addKVState(nodeType);
 
     if (nodeData.name === 'LoadImageFromUrl' || nodeData.name === 'LoadImageAsMaskFromUrl') {
-      migrateWidget(nodeType, 'url', 'image')
+      migrateWidget(nodeType, 'url', 'image');
       addUploadWidget(nodeType, 'image', 'image');
       addImagePreview(nodeType, 'image');
     } else if (nodeData.name == 'LoadVideoFromUrl') {
