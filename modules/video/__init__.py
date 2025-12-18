@@ -52,10 +52,10 @@ try:
         @classmethod
         def INPUT_TYPES(s):
             inputs = LoadVideoPath.INPUT_TYPES()
-            inputs["required"]["video"] = ("STRING", {"default": "", "multiline": True, "dynamicPrompts": False})
+            inputs["required"]["video"] = ("STRING", {"default": ""})
             return inputs
 
-        CATEGORY = "Art Venture/Loaders"
+        CATEGORY = "ArtVenture/Loaders"
         FUNCTION = "load"
         RETURN_TYPES = ("IMAGE", "INT", "BOOLEAN")
         RETURN_NAMES = ("frames", "frame_count", "has_video")
@@ -164,7 +164,7 @@ try:
                 from urllib.parse import parse_qs
 
                 qs_idx = url.find("?")
-                qs = parse_qs(url[qs_idx + 1:])
+                qs = parse_qs(url[qs_idx + 1 :])
                 filename = qs.get("name", qs.get("filename", None))
                 if filename is None:
                     raise Exception(f"Invalid url: {url}")

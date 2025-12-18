@@ -10,7 +10,7 @@ import comfy.model_management
 from .utils import load_module
 
 custom_nodes = folder_paths.get_folder_paths("custom_nodes")
-ip_adapter_dir_names = ["IPAdapter", "ComfyUI_IPAdapter_plus"]
+ip_adapter_dir_names = ["IPAdapter", "ComfyUI_IPAdapter_plus", "comfyui_ipadapter_plus"]
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -50,7 +50,7 @@ try:
 
         RETURN_TYPES = ("IPADAPTER",)
         RETURN_NAMES = ("pipeline",)
-        CATEGORY = "Art Venture/IP Adapter"
+        CATEGORY = "ArtVenture/IP Adapter"
         FUNCTION = "load_ip_adapter"
 
         def load_ip_adapter(self, ip_adapter_name, clip_name):
@@ -88,7 +88,7 @@ try:
 
         RETURN_TYPES = ("MODEL", "IPADAPTER", "CLIP_VISION")
         RETURN_NAMES = ("model", "pipeline", "clip_vision")
-        CATEGORY = "Art Venture/IP Adapter"
+        CATEGORY = "ArtVenture/IP Adapter"
         FUNCTION = "apply_ip_adapter"
 
         def apply_ip_adapter(

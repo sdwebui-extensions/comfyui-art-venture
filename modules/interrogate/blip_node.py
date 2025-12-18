@@ -126,7 +126,7 @@ class BlipLoader:
 
     RETURN_TYPES = ("BLIP_MODEL",)
     FUNCTION = "load_blip"
-    CATEGORY = "Art Venture/Captioning"
+    CATEGORY = "ArtVenture/Captioning"
 
     def load_blip(self, model_name):
         return (load_blip(model_name),)
@@ -143,7 +143,7 @@ class DownloadAndLoadBlip:
 
     RETURN_TYPES = ("BLIP_MODEL",)
     FUNCTION = "download_and_load_blip"
-    CATEGORY = "Art Venture/Captioning"
+    CATEGORY = "ArtVenture/Captioning"
 
     def download_and_load_blip(self, model_name):
         if model_name not in folder_paths.get_filename_list("blip"):
@@ -195,7 +195,7 @@ class BlipCaption:
     RETURN_NAMES = ("caption",)
     OUTPUT_IS_LIST = (True,)
     FUNCTION = "blip_caption"
-    CATEGORY = "Art Venture/Captioning"
+    CATEGORY = "ArtVenture/Captioning"
 
     def blip_caption(
         self, image, min_length, max_length, device_mode="AUTO", prefix="", suffix="", enabled=True, blip_model=None

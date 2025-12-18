@@ -84,7 +84,7 @@ class DeepDanbooruCaption:
     RETURN_NAMES = ("caption",)
     OUTPUT_IS_LIST = (True,)
     FUNCTION = "caption"
-    CATEGORY = "Art Venture/Utils"
+    CATEGORY = "ArtVenture/Utils"
 
     def caption(
         self,

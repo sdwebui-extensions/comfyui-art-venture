@@ -1,5 +1,4 @@
 import os
-import inspect
 from typing import Dict
 
 import folder_paths
@@ -7,7 +6,7 @@ import folder_paths
 from ..utils import load_module
 
 custom_nodes = folder_paths.get_folder_paths("custom_nodes")
-efficieny_dir_names = ["ImpactPack", "ComfyUI-Impact-Pack"]
+efficieny_dir_names = ["ImpactPack", "ComfyUI-Impact-Pack", "comfyui-impact-pack"]
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -36,6 +35,9 @@ try:
         @classmethod
         def INPUT_TYPES(s):
             inputs = FaceDetailer.INPUT_TYPES()
+            if not "optional" in inputs:
+                inputs["optional"] = {}
+
             inputs["optional"]["enabled"] = (
                 "BOOLEAN",
                 {"default": True, "label_on": "enabled", "label_off": "disabled"},
@@ -75,6 +77,9 @@ try:
         @classmethod
         def INPUT_TYPES(s):
             inputs = FaceDetailerPipe.INPUT_TYPES()
+            if not "optional" in inputs:
+                inputs["optional"] = {}
+
             inputs["optional"]["enabled"] = (
                 "BOOLEAN",
                 {"default": True, "label_on": "enabled", "label_off": "disabled"},

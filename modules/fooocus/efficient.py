@@ -16,9 +16,7 @@ try:
     module_path = None
 
     for custom_node in custom_nodes:
-        custom_node = (
-            custom_node if not os.path.islink(custom_node) else os.readlink(custom_node)
-        )
+        custom_node = custom_node if not os.path.islink(custom_node) else os.readlink(custom_node)
         for module_dir in efficieny_dir_names:
             if os.path.exists(os.path.abspath(os.path.join(custom_node, module_dir))):
                 module_path = os.path.abspath(
@@ -49,7 +47,7 @@ try:
 
             return inputs
 
-        CATEGORY = "Art Venture/Sampling"
+        CATEGORY = "ArtVenture/Sampling"
 
         def sample(self, *args, sharpness=2.0, **kwargs):
             patch.sharpness = sharpness
@@ -69,7 +67,7 @@ try:
 
             return inputs
 
-        CATEGORY = "Art Venture/Sampling"
+        CATEGORY = "ArtVenture/Sampling"
 
         def sampleadv(self, *args, sharpness=2.0, **kwargs):
             patch.sharpness = sharpness
@@ -87,7 +85,7 @@ try:
             inputs["optional"]["lora_override"] = ("STRING", {"default": "None"})
             return inputs
 
-        CATEGORY = "Art Venture/Loaders"
+        CATEGORY = "ArtVenture/Loaders"
 
         def efficientloader(
             self,
@@ -108,9 +106,7 @@ try:
             if lora_override != "None":
                 lora_name = lora_override
 
-            return super().efficientloader(
-                ckpt_name, vae_name, clip_skip, lora_name, *args, **kwargs
-            )
+            return super().efficientloader(ckpt_name, vae_name, clip_skip, lora_name, *args, **kwargs)
 
     NODE_CLASS_MAPPINGS.update(
         {
